@@ -17,8 +17,6 @@ from matplotlib.patches import Rectangle
 
 import time
 
-traj = "/home/cbenasolo/Documents/haddock_Na17/gmx_clust_ensemble/comb_T1_T2/combine_trj/final_B_trj.cat.xtc"
-pdb  = "/home/cbenasolo/Documents/haddock_Na17/gmx_clust_ensemble/comb_T1_T2/combine_trj/chainB_ref.pdb"
 
 def features_selection(pdb, traj, features) :
     """ ---  This function sets the features that will be used for the clusterization  ---
