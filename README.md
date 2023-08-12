@@ -19,8 +19,7 @@ Protocols of the RHCC :<br>
 The dendogram height between two singleton cluster (from the left to the the right) are stored as it corresponds to the reachability distance.<br>
 (2) The projection of the reachability distances give a reachability plot.<br>
 (3) From the tops to the bottoms of the tree, at separable dents, clusters are splitted into finer child(ren) cluster(s), i.e into more homogenous clusters.<br>
-![protocol | width=50](images/reachability_plot_0.png )
-<img src="images/reachability_plot_0.png" width="150" height="280">
+<img src="images/reachability_plot_0.png" width="300" >
 
 
 ## Installation
