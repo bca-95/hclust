@@ -15,11 +15,11 @@ For a very large data, the time execution of the algorithm increase significantl
 The projection of the reachability distance results to a reachability plot where potential clusters are indicated by "dents". 
 
 Protocols of the RHCC :
-(1) The RHCC computes a hierarchical clustering, which yield into a dendogram. \\
-The dendogram height between two singleton cluster (from the left to the the right) are stored as it corresponds to the reachability distance.\\
-(2) The projection of the reachability distances give a reachability plot.\\
-(3) From the tops to the bottoms of the tree, at separable dents, clusters are splitted into finer child(ren) cluster(s), i.e into more homogenous clusters.\\
-![protocol](imaages/)
+(1) The RHCC computes a hierarchical clustering, which yield into a dendogram. \n
+The dendogram height between two singleton cluster (from the left to the the right) are stored as it corresponds to the reachability distance.\n
+(2) The projection of the reachability distances give a reachability plot.\n
+(3) From the tops to the bottoms of the tree, at separable dents, clusters are splitted into finer child(ren) cluster(s), i.e into more homogenous clusters.\n
+![protocol](images/reachability_plot_0.png)
 
 
 ## Installation
