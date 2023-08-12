@@ -20,16 +20,17 @@ The dendogram height between two singleton cluster (from the left to the the rig
 (2) The projection of the reachability distances give a reachability plot.<br>
 (3) From the tops to the bottoms of the tree, at separable dents, clusters are splitted into finer child(ren) cluster(s), i.e into more homogenous clusters.<br>
 ![protocol | width=50](images/reachability_plot_0.png )
+<img src="images/reachability_plot_0.png" width="150" height="280">
 
 
 ## Installation
 Please dowload the file **revised_huclust.py*** into a directory
-Add the following command to your .bashrc :
+Add the following command to your .bashrc : <br>
 `export PYTHONPATH=$PYTHONPATH:/path_to_directory/`
 
 ## Usage
 This module is executable in IDE such as Jupyter-notebook.
-After installation, the module can be import into Jupyter-notebook :
+After installation, the module can be import into Jupyter-notebook : <br>
 `import revised_hclust as r_clust`
 
 Inputs
