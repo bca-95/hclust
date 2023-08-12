@@ -14,18 +14,18 @@ OPTICS is a density-based algorithm that computes the shortest distance (reachab
 For a very large data, the time execution of the algorithm increase significantly.
 The projection of the reachability distance results to a reachability plot where potential clusters are indicated by "dents". 
 
-Protocols of the RHCC :
+Protocols of the RHCC :<br>
 (1) The RHCC computes a hierarchical clustering, which yield into a dendogram. <br>
 The dendogram height between two singleton cluster (from the left to the the right) are stored as it corresponds to the reachability distance.<br>
 (2) The projection of the reachability distances give a reachability plot.<br>
 (3) From the tops to the bottoms of the tree, at separable dents, clusters are splitted into finer child(ren) cluster(s), i.e into more homogenous clusters.<br>
-![protocol](images/reachability_plot_0.png | width=50)
+![protocol | width=50](images/reachability_plot_0.png )
 
 
 ## Installation
 Please dowload the file **revised_huclust.py*** into a directory
-Add the following command to your .bashrc : \\
-export PYTHONPATH=$PYTHONPATH:/path_to_directory/
+Add the following command to your .bashrc :
+`export PYTHONPATH=$PYTHONPATH:/path_to_directory/`
 
 ## Usage
 This module is executable in IDE such as Jupyter-notebook.
