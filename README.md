@@ -33,7 +33,20 @@ This module is executable in IDE such as Jupyter-notebook.
 After installation, the module can be import into Jupyter-notebook : <br>
 `import revised_hclust as r_clust`
 
-Inputs
+To perform the clustering, execute the command :
+`r_clust.execute_revised_hclust(pdb, traj, feat, cutoff_min, min_number_data, outcomb)`
+
+where : <br>
+- pdb : absolute path to the pdb file
+- traj : absolute path to the trajectory file
+- features : atoms selection, use mdAnalysis sytaxes (eg : "protein and name CA")
+- cutoff_min (int, float) :  define maximal distance value between two points to be considered as similar.
+- min_number_data : define the minimum number of points to be considered as clusters
+- outcomb : absolute path where to write the trajectory files for the clustered points
+
+Thus, the function execute_revised_hclust compute the RHCC, generate trajectory files of the clustered structures, and display several analysis plots.
+
+
 
 
 
