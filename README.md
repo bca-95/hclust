@@ -1,3 +1,5 @@
+*The module is already functional. However, I still need to update the readme file
+
 # Revised hierarchical clustering (RHCC)
 ## Introduction
 The Revised Hierarchical Clustering is an automated algorithm to select clusters from a hierarchical representation, by transforming this latter into a reachability plot.
