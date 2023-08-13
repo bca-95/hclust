@@ -1,4 +1,5 @@
-*The module is already functional. However, I still need to update the readme file
+*The module is already functional. However, I still need to update the readme file. <br>
+*In the near future, I would like to integrate this script in deep learning, to choose wisely all the input hyper-parameters
 
 # Revised hierarchical clustering (RHCC)
 ## Introduction
