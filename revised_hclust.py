@@ -59,9 +59,8 @@ def dim_reduc(features_flat) :
     - The plot of explained variance and the projection of the data points onto the two first components
     """
     # - Rescale the data
-    df_CVs = pd.DataFrame(features_flat)
     scaler = StandardScaler()
-    X_features = scaler.fit_transform(df_CVs)
+    X_features = scaler.fit_transform(features_flat)
     
     # - Perform PCA and the explained variance of each component
     # - Transform the data into lower dimension, with nb of components explaining 80% of the data variance
@@ -72,8 +71,7 @@ def dim_reduc(features_flat) :
     nb_comp      = np.shape( np.where(cum_var_exp <= 0.8) )[1]
     
     pca2     = PCA(n_components = nb_comp)
-    pca2.fit(X_features)
-    data_pca = pca2.transform(X_features)
+    data_pca = pca2.fit_transform(X_features)
     
     # -  Plot figures
     look      = 10
@@ -142,8 +140,7 @@ def define_cutoff(cutoff_min, dist_reach) :
     # Sort the cutoff to choose discritized value
     # Select distance values above the cutoff_min
     # Use the std of the whole selected distance values, as interval to set a list of discretized cutoff 
-    cutoff_min = cutoff_min
-    sort_cutof = dist_reach[ np.argsort(dist_reach)[::-1] ]
+    sort_cutof = np.sort(dist_reach)[::-1] 
     sort_cutof = sort_cutof[ sort_cutof >= cutoff_min ]
     interval_  = np.std( np.abs(np.diff(sort_cutof)) )
     list_cutoff = np.arange(cutoff_min, np.max(sort_cutof), interval_)[::-1]
