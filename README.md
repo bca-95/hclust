@@ -52,7 +52,8 @@ features   = "protein and name CA" <br>
 cutoff_min = 4 <br>
 min_number_data = 400 <br>
 outcomb = "/path/to/directory/" <br>
-r_clust.execute_revised_hclust(pdb, traj, feat, cutoff_min, min_number_data, outcomb)``` <br>
+r_clust.execute_revised_hclust(pdb, traj, feat, cutoff_min, min_number_data, outcomb)```
+
 Thus, the function execute_revised_hclust compute the RHCC, generate trajectory files for the clustered structures, and display several analysis plots.
 
 
