@@ -46,12 +46,12 @@ where : <br>
 - outcomb : absolute path to write the trajectory files for the clustered points <br>
 e.g. : <br>
 ```
-pdb  = "/path/to/directory/file.pdb" <br>
-traj = "/path/to/directory/file.xtc" <br>
-features   = "protein and name CA" <br>
-cutoff_min = 4 <br>
-min_number_data = 400 <br>
-outcomb = "/path/to/directory/" <br>
+pdb  = "/path/to/directory/file.pdb"
+traj = "/path/to/directory/file.xtc"
+features   = "protein and name CA"
+cutoff_min = 4
+min_number_data = 400 
+outcomb = "/path/to/directory/" 
 r_clust.execute_revised_hclust(pdb, traj, feat, cutoff_min, min_number_data, outcomb)
 ```
 
