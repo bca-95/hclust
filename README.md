@@ -44,6 +44,7 @@ where : <br>
 - cutoff_min (int, float) :  define maximal distance value between two points to be considered similar
 - min_number_data : define the minimum number of points to be considered as clusters
 - outcomb : absolute path to write the trajectory files for the clustered points <br>
+
 e.g. : <br>
 ```
 pdb  = "/path/to/directory/file.pdb"
