@@ -40,7 +40,7 @@ To perform the clustering and generate trajecories files of clusters at once, ex
 where : <br>
 - pdb : absolute path to the PDB file
 - traj : absolute path to the trajectory file
-- features : atoms selection using mdAnalysis sytax (e.g. : "protein and name CA")
+- features : atoms selection using mdAnalysis syntax (e.g. : "protein and name CA")
 - cutoff_min (int, float) :  define maximal distance value between two points to be considered similar
 - min_number_data : define the minimum number of points to be considered as clusters
 - outcomb : absolute path to write the trajectory files for the clustered points <br>
