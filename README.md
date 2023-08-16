@@ -1,9 +1,9 @@
-*The module is already functional. However, I still need to update the readme file. <br>
 *In the near future, I would like to integrate this script in deep learning, to choose wisely all the input hyper-parameters
 
 # Revised hierarchical clustering (RHCC)
 ## Introduction
-The Revised Hierarchical Clustering is an automated algorithm to select clusters from a hierarchical representation, by transforming this latter into a reachability plot.
+The Revised Hierarchical Clustering (RHCC) aims to cluster structures of biomolecules sharing similar conformations. <br>
+The RHCC is an automated algorithm to define clusters from a hierarchical representation, by transforming this latter into a reachability plot.
 Thus, the RHCC merge the concept of the hierarchical clustering algorithm and density based clustering OPTCS.
 The general idea was inspired from the paper work of Sander and collaborators : DOI:10.1007/3-540-36175-8_8.
 The motivation behind the development of RHCC emerged from the difficulty of reading a dendogram, and defining optimum hyperparameters of OPTIC for a large data set.
@@ -26,7 +26,7 @@ The dendogram height between two singleton cluster (from the left to the the rig
 
 
 ## Installation
-Please dowload the file **revised_huclust.py*** into a directory
+Please dowload the file **revised_huclust.py** into a directory.
 Add the following command to your .bashrc : <br>
 `export PYTHONPATH=$PYTHONPATH:/path_to_directory/`
 
@@ -35,7 +35,7 @@ This module is executable in IDE such as Jupyter-notebook.
 After installation, the module can be import into Jupyter-notebook : <br>
 `import revised_hclust as r_clust`
 
-To perform the clustering, execute the command :
+To perform the clustering and generate trajecories files of clusters at once, execute the command :
 `r_clust.execute_revised_hclust(pdb, traj, feat, cutoff_min, min_number_data, outcomb)`
 
 where : <br>
@@ -45,8 +45,41 @@ where : <br>
 - cutoff_min (int, float) :  define maximal distance value between two points to be considered as similar.
 - min_number_data : define the minimum number of points to be considered as clusters
 - outcomb : absolute path where to write the trajectory files for the clustered points
-
+e.g. : <br>
+pdb  = "/path/to/directory/file.pdb" <br>
+traj = "/path/to/directory/file.xtc" <br>
+features   = "protein and name CA" <br>
+cutoff_min = 4 <br>
+min_number_data = 400 <br>
+outcomb = "/path/to/directory/" <br>
+`r_clust.execute_revised_hclust(pdb, traj, feat, cutoff_min, min_number_data, outcomb)` <br>
 Thus, the function execute_revised_hclust compute the RHCC, generate trajectory files of the clustered structures, and display several analysis plots.
+
+-- OR --
+To analyze each step of the module , execute in the following order : <br>
+```r_clust.features_selection()
+   r_clust.dim_reduc()
+   r_clust.transform_reach()
+   r_clust.define_cutoff()
+   r_clust.execute_clustering()
+   r_clust.plot_reachability()
+   r_clust.label_clustering()
+   r_clust.boxplot_()
+   r_clust.generate_xtc()
+```
+
+To display the description, input(s) and output(s) of each function, execute `r_clust.features_selection?` or `r_clust.dim_reduc?` for eg.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
