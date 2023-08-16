@@ -22,7 +22,7 @@ Protocols of the RHCC :<br>
 The dendogram height between two singleton cluster (from the left to the the right) are stored as it corresponds to the reachability distance.<br>
 (2) The projection of the reachability distances give a reachability plot.<br>
 (3) From the tops to the bottoms of the tree, at separable dents, clusters are splitted into finer child(ren) cluster(s), i.e into more homogenous clusters.<br>
-<img src="images/reachability_plot_0.png" width="300" >
+<img src="images/reachability_plot_0.png" width="500" >
 
 
 ## Installation
@@ -44,7 +44,7 @@ where : <br>
 - features : atoms selection, use mdAnalysis sytaxes (eg : "protein and name CA")
 - cutoff_min (int, float) :  define maximal distance value between two points to be considered as similar.
 - min_number_data : define the minimum number of points to be considered as clusters
-- outcomb : absolute path where to write the trajectory files for the clustered points
+- outcomb : absolute path where to write the trajectory files for the clustered points <br>
 e.g. : <br>
 pdb  = "/path/to/directory/file.pdb" <br>
 traj = "/path/to/directory/file.xtc" <br>
