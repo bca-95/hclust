@@ -6,7 +6,7 @@ The Revised Hierarchical Clustering (RHCC) aims to cluster structures of biomole
 The RHCC is an automated algorithm to define clusters from a hierarchical representation, by transforming this latter into a reachability plot.
 Thus, the RHCC merge the concept of the hierarchical clustering algorithm and density based clustering OPTCS.
 The general idea was inspired from the paper work of Sander and collaborators : DOI:10.1007/3-540-36175-8_8.
-#The motivation behind the development of RHCC emerged from the difficulty of reading a dendogram, and defining optimum hyperparameters of OPTIC for a large data set.
+The motivation behind the development of RHCC emerged from the difficulty of reading a dendogram, and defining optimum hyperparameters of OPTIC for a large data set.
 
 The basic hierarchical clustering algorithm (HCC) computes the distance between two groups and merge them according to their similarity until forming one large group.
 Thus, the algorithm yield to a hierarchical representation of the data points, called dendogram.
