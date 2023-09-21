@@ -74,6 +74,8 @@ r_clust.features_selection()
 
 To display the description, input(s) and output(s) of each function, execute `r_clust.features_selection?` or `r_clust.dim_reduc?`, etc.
 
+In order to evaluate the quality of the clusters, the function r_clust.cluster_sse() computes the sum squarred error. It calcutes within a cluster the distances of each point to the centroid.
+
 
 
 
