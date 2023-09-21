@@ -419,6 +419,26 @@ def boxplot_(label_, dist_reach) :
     return
 
 
+def cluster_sse(data_pca, label_) :
+    """
+    sse = sum squarred error, within a cluster is computed the distance of each point to the centroids.
+    The aim is to minimize the sse
+    INPUTS : 
+    - data_pca : data with a dimension (m,n)
+    - label : list of cluster's label
+    OUTPUT :
+    sse : sum squared errot
+
+    """
+    sse = 0
+    for label_i in np.unique(label_) :
+        index_label = np.where(label_ == label_i)
+        sse += np.sum( np.square( np.mean(data_pca[index_label], axis=0) - data_pca[index_label] ))
+    print("The squared error is : " + str(sse) )
+
+    return sse
+
+
 
 def generate_xtc(u, features_xtc, index_den, label_, outcomb) :
     """ --- Generate trajectory files for each cluster --- 
@@ -463,6 +483,7 @@ def execute_revised_hclust(pdb, traj, features, cutoff_min, min_number_data, out
     plot_reachability(dist_reach, interval_,  visited_parent, used_cutoff, used_delimiter, engender_child, tag_child)
     label_ = label_clustering(dist_reach, visited_parent, used_delimiter, tag_child)
     boxplot_(label_, dist_reach)
+    cluster_sse(data_pca, label_)
     generate_xtc(u, features_xtc, index_den, label_, outcomb)
     
     end_time = time.time()
