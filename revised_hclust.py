@@ -10,6 +10,7 @@ from sklearn import metrics
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 import scipy.cluster.hierarchy as sch
 from sklearn.cluster import AgglomerativeClustering
+from sklearn import preprocessing
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -45,8 +46,6 @@ def features_selection(pdb, traj, features) :
         features_flat.append(np.concatenate(features_to_clust.positions))
     return(u, features_xtc, features_flat)
 
-
-
 def dim_reduc(features_flat) :
     """ --- Run dimensionality reduction ---
     This function rescale/normalize the data.
@@ -73,28 +72,28 @@ def dim_reduc(features_flat) :
     pca2     = PCA(n_components = nb_comp)
     data_pca = pca2.fit_transform(X_features)
     
-    # -  Plot figures
-    look      = 10
-    labelsize = 16
-    fig, ax   = plt.subplots(1,2, figsize=(10,4), gridspec_kw={'width_ratios': [6,4], 'wspace': 0.3})
-
-    ax[0].bar(range(1,look+1), pca_variance[:look], alpha = 0.5,
-              align ='center', label = 'individual explained variance')
-    ax[0].step(range(1,look+1), cum_var_exp[:look], where='mid',
-             label='cumulative explained variance')
-    ax[0].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
-    ax[0].legend(fontsize = labelsize-3)
-    ax[0].set_ylabel('Variance ratio', fontsize = labelsize)
-    ax[0].set_xlabel('Principal components', fontsize = labelsize)
-
-    ax[1].scatter(data_pca[:,0], data_pca[:,1])
-    ax[1].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
-    ax[1].set_ylabel('PC1', fontsize = labelsize)
-    ax[1].set_xlabel('PC2', fontsize = labelsize)
     print( "A dimensionnality reduction was performed on your data, using {} components".format(nb_comp) )
     return data_pca
 
-
+#def plot_projection() :
+#    look      = 10
+#    labelsize = 16
+#    fig, ax   = plt.subplots(1,2, figsize=(10,4), gridspec_kw={'width_ratios': [6,4], 'wspace': 0.3})
+#
+#    ax[0].bar(range(1,look+1), pca_variance[:look], alpha = 0.5,
+#              align ='center', label = 'individual explained variance')
+#    ax[0].step(range(1,look+1), cum_var_exp[:look], where='mid',
+#             label='cumulative explained variance')
+#    ax[0].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
+#    ax[0].legend(fontsize = labelsize-3)
+#    ax[0].set_ylabel('Variance ratio', fontsize = labelsize)
+#    ax[0].set_xlabel('Principal components', fontsize = labelsize)
+#
+#    ax[1].scatter(data_pca[:,0], data_pca[:,1])
+#    ax[1].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
+#    ax[1].set_ylabel('PC1', fontsize = labelsize)
+#    ax[1].set_xlabel('PC2', fontsize = labelsize)
+#    return
 
 def transform_reach(data_pca) :
     """ --- This function perform a hierarchical clustering, transform this latter in reachability distance plot  ---
@@ -110,19 +109,20 @@ def transform_reach(data_pca) :
     hclust  = sch.linkage(data_pca, method = 'ward', metric='euclidean' )
     fig, ax = plt.subplots(2,1, figsize=(9,5), gridspec_kw={'hspace': 0.3})
     den_complete = sch.dendrogram(hclust, no_labels = True, color_threshold = 0, ax=ax[0])
+    plt.close() 
     
     index_den = np.array(den_complete['leaves'])
     dist_reach = np.linalg.norm( data_pca[ index_den[:-1] ] - data_pca[ index_den[1:] ] , axis=1 )
     dist_reach = np.insert(dist_reach, 0, 0)
     
-    labelsize = 13
-    ax[1].plot( range(len(index_den)), dist_reach )
-    ax[1].set_ylabel("Reachability \n distance", fontsize = labelsize)
-    ax[1].set_ylabel("Data points", fontsize = labelsize)
-    ax[1].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
-    ax[1].set_title("Reachability plot", fontsize = labelsize)
-    ax[0].set_title("Dendogram / Hierarchichal clustering", fontsize = labelsize)
-    ax[0].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
+    #labelsize = 13
+    #ax[1].plot( range(len(index_den)), dist_reach )
+    #ax[1].set_ylabel("Reachability \n distance", fontsize = labelsize)
+    #ax[1].set_ylabel("Data points", fontsize = labelsize)
+    #ax[1].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
+    #ax[1].set_title("Reachability plot", fontsize = labelsize)
+    #ax[0].set_title("Dendogram / Hierarchichal clustering", fontsize = labelsize)
+    #ax[0].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
     return index_den, dist_reach
 
 
@@ -377,8 +377,6 @@ def label_clustering(dist_reach, visited_parent, used_delimiter, tag_child) :
         label_[begin_clust:end_clust] = clust_i
     return label_
 
-
-
 def boxplot_(label_, dist_reach) :
     """ --- Analyse the homogeneity of the data --- 
     INPUTS : 
@@ -387,12 +385,10 @@ def boxplot_(label_, dist_reach) :
     OUTPUT :
     - boxplot
     """
-    df_dist_reach = pd.DataFrame({ 'clust_ID' : label_,\
-                                      'dist_reach' : dist_reach\
-                                      })
+    df_dist_reach = pd.DataFrame({ 'clust_ID' : label_, 'dist_reach' : dist_reach })
 
     labelsize = 16
-    fig, ax = plt.subplots(2,1,figsize=(10,8), gridspec_kw={'height_ratios': [5,2], 'hspace': 0.3})
+    fig, ax   = plt.subplots(2,1,figsize=(10,8), gridspec_kw={'height_ratios': [5,2], 'hspace': 0.3})
     # --- Boxplot --
     sns.boxplot(x="clust_ID", y="dist_reach",
                         data=df_dist_reach[df_dist_reach['clust_ID'] != 999] , color = "orange",  zorder = 1, ax = ax[0])
@@ -418,9 +414,23 @@ def boxplot_(label_, dist_reach) :
     ax[1].set_xticklabels(np.arange(1, len(new_id_clust)+1))
     return
 
+def rescale_data(data_pca):
+    r_data = preprocessing.MinMaxScaler(feature_range=(0, 1)).fit_transform(data_pca)
+    return r_data
 
-def cluster_sse(data_pca, label_) :
+def goal_prediction(data_pca, label_) :
+    # data_pca is the raw data, it is fixed
+    goal_pred = []
+    for label_i in np.unique(label_) :
+        index_label = np.where(label_ == label_i)
+        goal_pred_i = np.mean(data_pca[index_label], axis=0)
+        goal_pred.append(goal_pred_i)
+    return np.array(goal_pred)
+
+def cluster_sse(data_pca, label_, weight) :
+    # data_pca variate here, it can be multiplied by the weight. It represent the predicted values according to the optimization of the weight
     """
+    abs_diff = is the absolute difference (error)
     sse = sum squarred error, within a cluster is computed the distance of each point to the centroids.
     The aim is to minimize the sse
     INPUTS : 
@@ -430,14 +440,17 @@ def cluster_sse(data_pca, label_) :
     sse : sum squared errot
 
     """
+    r_data = rescale_data(data_pca)
+
+    abs_diff = 0
     sse = 0
-    for label_i in np.unique(label_) :
+    goal_pred = goal_prediction(r_data, label_)
+    weighted_data = r_data * weight
+    for enum_i, label_i in enumerate(np.unique(label_)) :
         index_label = np.where(label_ == label_i)
-        sse += np.sum( np.square( np.mean(data_pca[index_label], axis=0) - data_pca[index_label] ))
-    print("The squared error is : " + str(sse) )
-
-    return sse
-
+        sse += np.sum( ( weighted_data[index_label] - goal_pred[enum_i] )**2)        
+        abs_diff += np.sum( weighted_data[index_label] - goal_pred[enum_i]) 
+    return abs_diff, sse
 
 
 def generate_xtc(u, features_xtc, index_den, label_, outcomb) :
@@ -461,35 +474,83 @@ def generate_xtc(u, features_xtc, index_den, label_, outcomb) :
                 W.write(features_xtc)
     return
 
-def execute_revised_hclust(pdb, traj, features, cutoff_min, min_number_data, outcomb) :
-    """--- Execute the revised hierarchical clustering --- 
-    INPUTS :
-    - pdb : absolute path to the pdb file
-    - traj : absolute path to the trajectory file
-    - features : atoms selection, use mdAnalysis sytaxes (eg : "protein and name CA")
-    - cutoff_min (int, float) :  define maximal distance value between two points to be considered as similar.
-    - min_number_data : define the minimum number of points to be considered as clusters
-    - outcomb : absolute path where to write the trajectory files for the clustered points
-
-    """
-    
-    start_time = time.time()
-    
+# -- Load data and transform it.
+def process_data(pdb, traj, features) :
     u, features_xtc, features_flat = features_selection(pdb, traj, features)
     data_pca = dim_reduc(features_flat)
     index_den, dist_reach = transform_reach(data_pca)
+    return u, index_den, data_pca, dist_reach
+ 
+def perform_rhc(cutoff_min, dist_reach, min_number_data,
+        return_plot_reachability=False, return_boxplot=False) :
+
     interval_, list_cutoff = define_cutoff(cutoff_min, dist_reach)
     visited_parent, used_cutoff,  used_delimiter, engender_child, tag_child = execute_clustering(min_number_data, list_cutoff, dist_reach)
-    plot_reachability(dist_reach, interval_,  visited_parent, used_cutoff, used_delimiter, engender_child, tag_child)
     label_ = label_clustering(dist_reach, visited_parent, used_delimiter, tag_child)
-    boxplot_(label_, dist_reach)
-    cluster_sse(data_pca, label_)
-    generate_xtc(u, features_xtc, index_den, label_, outcomb)
-    
+
+    if return_plot_reachability==True:
+        plot_reachability(dist_reach, interval_,  visited_parent, used_cutoff, used_delimiter, engender_child, tag_child)
+    if return_boxplot==True:
+        boxplot_(label_, dist_reach)
+    return label_
+
+def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb):
+    data_pca, dist_reach = process_data(pdb, traj, features)
+    perform_rhc(cutoff_min, dist_reach, min_number_data)
+    return
+
+
+def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iteration=20, return_xtc_file=False):
+    # I want to optimize the cutoff_min, 
+    # In ML, this cutoff_min will correspond to the weight. This weight will be optimize
+
+    start_time = time.time()
+    lr = 0.00001 # learning rate
+   # input_ = data_pca
+    weight_cutoff = cutoff_min
+    label_ = 0
+
+    # --- Load data and transform data
+    _, _, data_pca, dist_reach = process_data(pdb, traj, features)
+    #r_data = rescale_data(data_pca)
+    # --- Perform clustring and iterate
+    for it in range(iteration) :
+        # Cluster
+        # Compute the SSE
+        label_ = perform_rhc(weight_cutoff, dist_reach, min_number_data)
+        
+        # Continue to iterate if I do not loose X% of my data and I did not create a negative cutoff
+        nb_outliers = np.shape( np.where(label_ == 999))[1]
+        max_outliers = (data_pca.shape[0]*60)/100
+        if (nb_outliers >= max_outliers) or ( weight_cutoff < 0) :
+            break
+        
+        abs_diff, sse = cluster_sse(data_pca, label_, weight_cutoff)
+        print("iter : {} ---- The squared error is {:.2f}:  --- Cutoff {:.2f}".format(it, sse, weight_cutoff))
+
+        #gradient = np.sum(r_data) * abs_diff
+        #gradient = -2 * abs_diff # chatgpt solution # overshooting
+        gradient = abs_diff
+        weight_cutoff = weight_cutoff - (lr *gradient)  # derivative)
+                    
+   
+    # --- Generate trajectory files for each cluster ---
+    if return_xtc_file==True :
+        u, index_den, _, _ = process_data(pdb, traj, features)
+        features_xtc       = u.select_atoms("protein")
+        generate_xtc(u, features_xtc, index_den, label_, outcomb)
+
+    perform_rhc(weight_cutoff, dist_reach, min_number_data, return_plot_reachability=True) 
+    print("The cutoff distance is : {}".format(weight_cutoff))
+ 
     end_time = time.time()
     print("Time of script execution ", (end_time - start_time)/60) 
 
-    return
+    return weight_cutoff
+
+
+
+
 
 
 
