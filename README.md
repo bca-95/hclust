@@ -1,4 +1,4 @@
-*The description bellow will be updated soon
+*The description below will be updated soon
 
 # Revised hierarchical clustering (RHCC)
 ## Introduction
