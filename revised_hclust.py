@@ -445,7 +445,8 @@ def cluster_sse(data_pca, label_, weight) :
     abs_diff = 0
     sse = 0
     goal_pred = goal_prediction(r_data, label_)
-    weighted_data = r_data * weight
+    print("OLLL")
+    weighted_data = r_data.dot(weight)
     for enum_i, label_i in enumerate(np.unique(label_)) :
         index_label = np.where(label_ == label_i)
         sse += np.sum( ( weighted_data[index_label] - goal_pred[enum_i] )**2)        
