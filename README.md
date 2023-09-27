@@ -1,4 +1,4 @@
-*In the near future, I would like to integrate this script in deep learning, to choose wisely all the input hyper-parameters
+*The description below will be updated soon
 
 # Revised hierarchical clustering (RHCC)
 ## Introduction
