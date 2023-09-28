@@ -439,10 +439,9 @@ def gradient_sse(data_pca, label_, weight) :
     - label : list of cluster's label
     OUTPUT :
     sse : sum squared errot
-
     """
 
-    lr = 0.00001
+    lr = 0.001
     sse = 0
 
     r_data = rescale_data(data_pca)
@@ -452,12 +451,11 @@ def gradient_sse(data_pca, label_, weight) :
         weighted_data = r_data[index_label] * weight
         
         # - Compute sum squared error
-        error = (weighted_data - goal_pred[enum_i])**2
-        sse += np.sum(error)
+        error = np.sum( (weighted_data - goal_pred[enum_i])**2)
+        sse += error
 
         # - Update the weight
-        abs_error = np.sum(weighted_data - goal_pred[enum_i])
-        gradient = abs_error
+        gradient = np.sqrt(error)
         weight = weight - (lr*gradient)
         #gradient = np.sum(r_data) * abs_diff
         #gradient = -2 * abs_diff # chatgpt solution # overshooting
@@ -525,8 +523,6 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
     _, _, data_pca, dist_reach = process_data(pdb, traj, features)
     # --- Perform clustring and iterate
     for it in range(iteration) :
-        # Cluster
-        # Compute the SSE
         label_ = perform_rhc(weight_cutoff, dist_reach, min_number_data)
         
         # Continue to iterate if I do not loose X% of my data and I did not create a negative cutoff
