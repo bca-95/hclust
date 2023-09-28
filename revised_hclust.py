@@ -512,7 +512,8 @@ def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb):
     return
 
 
-def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iteration=20, return_xtc_file=False):
+def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iteration=20,
+        return_plot_reachability=True, return_boxplot=False, return_xtc_file=False, show_steps=True):
     # I want to optimize the cutoff_min, 
     # In ML, this cutoff_min will correspond to the weight. This weight will be optimize
 
@@ -536,7 +537,8 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
         
         weight, sse = gradient_sse(data_pca, label_, weight_cutoff)
         weight_cutoff = weight
-        print("iter : {} ---- The squared error is {:.2f}:  --- Cutoff {:.2f}".format(it, sse, weight_cutoff))
+        if show_steps==True :
+            print("iter : {} ---- The squared error is {:.2f}:  --- Cutoff {:.2f}".format(it, sse, weight_cutoff))
   
     # --- Generate trajectory files for each cluster ---
     if return_xtc_file==True :
@@ -544,13 +546,17 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
         features_xtc       = u.select_atoms("protein")
         generate_xtc(u, features_xtc, index_den, label_, outcomb)
 
-    perform_rhc(weight_cutoff, dist_reach, min_number_data, return_plot_reachability=True) 
-    print("The cutoff distance is : {}".format(weight_cutoff))
- 
+    if return_plot_reachability==True :
+        perform_rhc(weight_cutoff, dist_reach, min_number_data, return_plot_reachability=True) 
+        print("The cutoff distance is : {}".format(weight_cutoff))
+
+    if return_boxplot== True :
+        perform_rhc(weight_cutoff, dist_reach, min_number_data, return_boxplot=True) 
+
     end_time = time.time()
     print("Time of script execution ", (end_time - start_time)/60) 
 
-    return weight_cutoff
+    return 
 
 
 
