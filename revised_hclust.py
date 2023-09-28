@@ -427,8 +427,9 @@ def goal_prediction(data_pca, label_) :
         goal_pred.append(goal_pred_i)
     return np.array(goal_pred)
 
-def cluster_sse(data_pca, label_, weight) :
+def gradient_sse(data_pca, label_, weight) :
     # data_pca variate here, it can be multiplied by the weight. It represent the predicted values according to the optimization of the weight
+    # Stochastic gradient : the weight will be updated by passing from each cluster
     """
     abs_diff = is the absolute difference (error)
     sse = sum squarred error, within a cluster is computed the distance of each point to the centroids.
@@ -440,18 +441,28 @@ def cluster_sse(data_pca, label_, weight) :
     sse : sum squared errot
 
     """
-    r_data = rescale_data(data_pca)
 
-    abs_diff = 0
+    lr = 0.00001
     sse = 0
+
+    r_data = rescale_data(data_pca)
     goal_pred = goal_prediction(r_data, label_)
-    print("OLLL")
-    weighted_data = r_data.dot(weight)
     for enum_i, label_i in enumerate(np.unique(label_)) :
         index_label = np.where(label_ == label_i)
-        sse += np.sum( ( weighted_data[index_label] - goal_pred[enum_i] )**2)        
-        abs_diff += np.sum( weighted_data[index_label] - goal_pred[enum_i]) 
-    return abs_diff, sse
+        weighted_data = r_data[index_label] * weight
+        
+        # - Compute sum squared error
+        error = (weighted_data - goal_pred[enum_i])**2
+        sse += np.sum(error)
+
+        # - Update the weight
+        abs_error = np.sum(weighted_data - goal_pred[enum_i])
+        gradient = abs_error
+        weight = weight - (lr*gradient)
+        #gradient = np.sum(r_data) * abs_diff
+        #gradient = -2 * abs_diff # chatgpt solution # overshooting
+
+    return weight, sse
 
 
 def generate_xtc(u, features_xtc, index_den, label_, outcomb) :
@@ -506,14 +517,11 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
     # In ML, this cutoff_min will correspond to the weight. This weight will be optimize
 
     start_time = time.time()
-    lr = 0.00001 # learning rate
-   # input_ = data_pca
     weight_cutoff = cutoff_min
     label_ = 0
 
     # --- Load data and transform data
     _, _, data_pca, dist_reach = process_data(pdb, traj, features)
-    #r_data = rescale_data(data_pca)
     # --- Perform clustring and iterate
     for it in range(iteration) :
         # Cluster
@@ -522,19 +530,14 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
         
         # Continue to iterate if I do not loose X% of my data and I did not create a negative cutoff
         nb_outliers = np.shape( np.where(label_ == 999))[1]
-        max_outliers = (data_pca.shape[0]*60)/100
+        max_outliers = (data_pca.shape[0]*36)/100
         if (nb_outliers >= max_outliers) or ( weight_cutoff < 0) :
             break
         
-        abs_diff, sse = cluster_sse(data_pca, label_, weight_cutoff)
+        weight, sse = gradient_sse(data_pca, label_, weight_cutoff)
+        weight_cutoff = weight
         print("iter : {} ---- The squared error is {:.2f}:  --- Cutoff {:.2f}".format(it, sse, weight_cutoff))
-
-        #gradient = np.sum(r_data) * abs_diff
-        #gradient = -2 * abs_diff # chatgpt solution # overshooting
-        gradient = abs_diff
-        weight_cutoff = weight_cutoff - (lr *gradient)  # derivative)
-                    
-   
+  
     # --- Generate trajectory files for each cluster ---
     if return_xtc_file==True :
         u, index_den, _, _ = process_data(pdb, traj, features)
