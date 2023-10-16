@@ -456,10 +456,9 @@ def gradient_sse(data_pca, label_, weight) :
     - label : list of cluster's label
     OUTPUT :
     sse : sum squared errot
-
     """
 
-    lr = 0.00001
+    lr = 0.001
     sse = 0
 
     r_data = rescale_data(data_pca)
@@ -469,12 +468,11 @@ def gradient_sse(data_pca, label_, weight) :
         weighted_data = r_data[index_label] * weight
         
         # - Compute sum squared error
-        error = (weighted_data - goal_pred[enum_i])**2
-        sse += np.sum(error)
+        error = np.sum( (weighted_data - goal_pred[enum_i])**2)
+        sse += error
 
         # - Update the weight
-        abs_error = np.sum(weighted_data - goal_pred[enum_i])
-        gradient = abs_error
+        gradient = np.sqrt(error)
         weight = weight - (lr*gradient)
         #gradient = np.sum(r_data) * abs_diff
         #gradient = -2 * abs_diff # chatgpt solution # overshooting
@@ -529,7 +527,8 @@ def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb):
     return
 
 
-def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iteration=20, return_xtc_file=False):
+def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iteration=20,
+        return_plot_reachability=True, return_boxplot=False, return_xtc_file=False, show_steps=True):
     # I want to optimize the cutoff_min, 
     # In ML, this cutoff_min will correspond to the weight. This weight will be optimize
 
@@ -541,8 +540,6 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
     _, _, data_pca, dist_reach = process_data(pdb, traj, features)
     # --- Perform clustring and iterate
     for it in range(iteration) :
-        # Cluster
-        # Compute the SSE
         label_ = perform_rhc(weight_cutoff, dist_reach, min_number_data)
         
         # Continue to iterate if I do not loose X% of my data and I did not create a negative cutoff
@@ -553,7 +550,8 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
         
         weight, sse = gradient_sse(data_pca, label_, weight_cutoff)
         weight_cutoff = weight
-        print("iter : {} ---- The squared error is {:.2f}:  --- Cutoff {:.2f}".format(it, sse, weight_cutoff))
+        if show_steps==True :
+            print("iter : {} ---- The squared error is {:.2f}:  --- Cutoff {:.2f}".format(it, sse, weight_cutoff))
   
     # --- Generate trajectory files for each cluster ---
     if return_xtc_file==True :
@@ -561,13 +559,17 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
         features_xtc       = u.select_atoms("protein")
         generate_xtc(u, features_xtc, index_den, label_, outcomb)
 
-    perform_rhc(weight_cutoff, dist_reach, min_number_data, return_plot_reachability=True) 
-    print("The cutoff distance is : {}".format(weight_cutoff))
- 
+    if return_plot_reachability==True :
+        perform_rhc(weight_cutoff, dist_reach, min_number_data, return_plot_reachability=True) 
+        print("The cutoff distance is : {}".format(weight_cutoff))
+
+    if return_boxplot== True :
+        perform_rhc(weight_cutoff, dist_reach, min_number_data, return_boxplot=True) 
+
     end_time = time.time()
     print("Time of script execution ", (end_time - start_time)/60) 
 
-    return weight_cutoff
+    return 
 
 
 
