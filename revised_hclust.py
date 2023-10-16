@@ -76,7 +76,7 @@ def dim_reduc(features_flat) :
     print( "A dimensionnality reduction was performed on your data, using {} components".format(nb_comp) )
     return data_pca
 
-#def plot_projection() :
+#def plot_components() :
 #    look      = 10
 #    labelsize = 16
 #    fig, ax   = plt.subplots(1,2, figsize=(10,4), gridspec_kw={'width_ratios': [6,4], 'wspace': 0.3})
@@ -139,7 +139,7 @@ def transform_reach(data_pca, return_projection=False) :
 
 
 
-def define_cutoff(dist_reach, cutoff_min=False ) :
+def define_cutoff(dist_reach, cutoff_min) :
     """ --- This function defines a list of discretized cutoff, in descending order. ---
     This list will be used in the function "execute_clustering".
     INPUTS :
@@ -154,10 +154,6 @@ def define_cutoff(dist_reach, cutoff_min=False ) :
     # Use the std of the whole selected distance values, as interval to set a list of discretized cutoff 
     sort_cutof = np.sort(dist_reach)[::-1] 
     
-    # If cutoff_min == False, no value was given, then randomly choose a cutoff_min
-    if cutoff_min == False :
-        cutoff_min = random.uniform(np.max(sort_cutof), np.min(sort_cutof))
-
     sort_cutof = sort_cutof[ sort_cutof >= cutoff_min ]
     interval_  = np.std( np.abs(np.diff(sort_cutof)) )
     list_cutoff = np.arange(cutoff_min, np.max(sort_cutof), interval_)[::-1]
@@ -508,10 +504,9 @@ def process_data(pdb, traj, features) :
     index_den, dist_reach = transform_reach(data_pca)
     return u, index_den, data_pca, dist_reach
  
-def perform_rhc(cutoff_min, dist_reach, min_number_data,
+def perform_rhc(dist_reach, min_number_data, cutoff_min,
         return_plot_reachability=False, return_boxplot=False) :
-
-    interval_, list_cutoff = define_cutoff(dist_reach, cutoff_min )
+    interval_, list_cutoff = define_cutoff(dist_reach, cutoff_min)
     visited_parent, used_cutoff,  used_delimiter, engender_child, tag_child = execute_clustering(min_number_data, list_cutoff, dist_reach)
     label_ = label_clustering(dist_reach, visited_parent, used_delimiter, tag_child)
 
@@ -523,24 +518,31 @@ def perform_rhc(cutoff_min, dist_reach, min_number_data,
 
 def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb):
     data_pca, dist_reach = process_data(pdb, traj, features)
-    perform_rhc(cutoff_min, dist_reach, min_number_data)
+    perform_rhc(dist_reach, min_number_data, cutoff_min)
     return
 
 
-def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iteration=20,
+def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , iteration=20,
         return_plot_reachability=True, return_boxplot=False, return_xtc_file=False, show_steps=True):
     # I want to optimize the cutoff_min, 
     # In ML, this cutoff_min will correspond to the weight. This weight will be optimize
 
     start_time = time.time()
+    # --- Load data and transform data
+    _, _, data_pca, dist_reach = process_data(pdb, traj, features)
+
+    # --- Initializing cutoff ---
+    # If cutoff_min == None, no value was given, then randomly choose a cutoff_min
+    if cutoff_min is None :
+        cutoff_min = random.uniform(np.min(dist_reach), np.max(dist_reach))
+        print("Initialization of the cutoff at {}".format(cutoff_min))
+    
     weight_cutoff = cutoff_min
     label_ = 0
 
-    # --- Load data and transform data
-    _, _, data_pca, dist_reach = process_data(pdb, traj, features)
     # --- Perform clustring and iterate
     for it in range(iteration) :
-        label_ = perform_rhc(weight_cutoff, dist_reach, min_number_data)
+        label_ = perform_rhc( dist_reach, min_number_data, weight_cutoff)
         
         # Continue to iterate if I do not loose X% of my data and I did not create a negative cutoff
         nb_outliers = np.shape( np.where(label_ == 999))[1]
@@ -560,11 +562,11 @@ def deep_rhcc(pdb, traj, features, cutoff_min, min_number_data, outcomb, iterati
         generate_xtc(u, features_xtc, index_den, label_, outcomb)
 
     if return_plot_reachability==True :
-        perform_rhc(weight_cutoff, dist_reach, min_number_data, return_plot_reachability=True) 
+        perform_rhc(dist_reach, min_number_data, weight_cutoff, return_plot_reachability=True) 
         print("The cutoff distance is : {}".format(weight_cutoff))
 
     if return_boxplot== True :
-        perform_rhc(weight_cutoff, dist_reach, min_number_data, return_boxplot=True) 
+        perform_rhc(dist_reach, min_number_data, weight_cutoff, return_boxplot=True) 
 
     end_time = time.time()
     print("Time of script execution ", (end_time - start_time)/60) 
