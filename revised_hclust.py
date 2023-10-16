@@ -2,6 +2,7 @@
 # edit
 import numpy as np
 import pandas as pd
+import random
 
 import MDAnalysis as mda
 
@@ -95,7 +96,23 @@ def dim_reduc(features_flat) :
 #    ax[1].set_xlabel('PC2', fontsize = labelsize)
 #    return
 
-def transform_reach(data_pca) :
+
+def plot_projection(index_den, dist_reach):
+    """ Return figures of a reachability plot and the projection of the data with lower dimension """
+    # - This funtion is executed when the function transform_reach is called 
+    labelsize = 13
+    ax[1].plot( range(len(index_den)), dist_reach )
+    ax[1].set_ylabel("Reachability \n distance", fontsize = labelsize)
+    ax[1].set_ylabel("Data points", fontsize = labelsize)
+    ax[1].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
+    ax[1].set_title("Reachability plot", fontsize = labelsize)
+    ax[0].set_title("Dendogram / Hierarchichal clustering", fontsize = labelsize)
+    ax[0].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
+    return
+
+
+
+def transform_reach(data_pca, return_projection=False) :
     """ --- This function perform a hierarchical clustering, transform this latter in reachability distance plot  ---
     For more information about reachability distance plot, read : DOI:10.1007/3-540-36175-8_8
     INPUT : 
@@ -114,20 +131,15 @@ def transform_reach(data_pca) :
     index_den = np.array(den_complete['leaves'])
     dist_reach = np.linalg.norm( data_pca[ index_den[:-1] ] - data_pca[ index_den[1:] ] , axis=1 )
     dist_reach = np.insert(dist_reach, 0, 0)
-    
-    #labelsize = 13
-    #ax[1].plot( range(len(index_den)), dist_reach )
-    #ax[1].set_ylabel("Reachability \n distance", fontsize = labelsize)
-    #ax[1].set_ylabel("Data points", fontsize = labelsize)
-    #ax[1].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
-    #ax[1].set_title("Reachability plot", fontsize = labelsize)
-    #ax[0].set_title("Dendogram / Hierarchichal clustering", fontsize = labelsize)
-    #ax[0].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
+
+    if return_projection==True :
+        plot_projection(index_den, dist_reach)
+
     return index_den, dist_reach
 
 
 
-def define_cutoff(cutoff_min, dist_reach) :
+def define_cutoff(dist_reach, cutoff_min=False ) :
     """ --- This function defines a list of discretized cutoff, in descending order. ---
     This list will be used in the function "execute_clustering".
     INPUTS :
@@ -141,6 +153,11 @@ def define_cutoff(cutoff_min, dist_reach) :
     # Select distance values above the cutoff_min
     # Use the std of the whole selected distance values, as interval to set a list of discretized cutoff 
     sort_cutof = np.sort(dist_reach)[::-1] 
+    
+    # If cutoff_min == False, no value was given, then randomly choose a cutoff_min
+    if cutoff_min == False :
+        cutoff_min = random.uniform(np.max(sort_cutof), np.min(sort_cutof))
+
     sort_cutof = sort_cutof[ sort_cutof >= cutoff_min ]
     interval_  = np.std( np.abs(np.diff(sort_cutof)) )
     list_cutoff = np.arange(cutoff_min, np.max(sort_cutof), interval_)[::-1]
@@ -496,7 +513,7 @@ def process_data(pdb, traj, features) :
 def perform_rhc(cutoff_min, dist_reach, min_number_data,
         return_plot_reachability=False, return_boxplot=False) :
 
-    interval_, list_cutoff = define_cutoff(cutoff_min, dist_reach)
+    interval_, list_cutoff = define_cutoff(dist_reach, cutoff_min )
     visited_parent, used_cutoff,  used_delimiter, engender_child, tag_child = execute_clustering(min_number_data, list_cutoff, dist_reach)
     label_ = label_clustering(dist_reach, visited_parent, used_delimiter, tag_child)
 
