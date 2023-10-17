@@ -1,3 +1,4 @@
+* The instruction file needs modification. Will be done soon
 # Revised hierarchical clustering (RHCC)
 ## Objective 
 This tool is an improved version of the hierarchical clustering algorithm, renamed **revised hierarchical clustering** or **RHCC**.<br>
