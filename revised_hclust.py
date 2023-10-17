@@ -440,9 +440,19 @@ def goal_prediction(data_pca, label_) :
         goal_pred.append(goal_pred_i)
     return np.array(goal_pred)
 
-def gradient_sse(data_pca, label_, weight) :
+def dropout(label_) :
+    # --- dropout is used to avoid overfitting, especially in large data
+    mask = 30
+    len_data = np.shape(label_)[1]
+    dropout_mask = np.ones(len_data,dtype=int)
+    mask_index = np.random.choice( np.arange(len_data), size = int((len_data*mask)/100) )
+    dropout_mask[mask_index] = 0
+    return dropout_mask.reshape(dropout_mask.shape[0],1)
+
+def gradient_sse(data_pca, label_, weight, mask=30) :
     # data_pca variate here, it can be multiplied by the weight. It represent the predicted values according to the optimization of the weight
     # Stochastic gradient : the weight will be updated by passing from each cluster
+    # Reciprocal is the factor to compensate for the removal of a certain amount of data
     """
     abs_diff = is the absolute difference (error)
     sse = sum squarred error, within a cluster is computed the distance of each point to the centroids.
@@ -454,24 +464,27 @@ def gradient_sse(data_pca, label_, weight) :
     sse : sum squared errot
     """
 
-    lr = 0.001
+    lr  = 0.001
     sse = 0
+    reciprocal_factor = 1 / (1-(mask/100))
 
-    r_data = rescale_data(data_pca)
+    r_data    = rescale_data(data_pca)
     goal_pred = goal_prediction(r_data, label_)
     for enum_i, label_i in enumerate(np.unique(label_)) :
         index_label = np.where(label_ == label_i)
-        weighted_data = r_data[index_label] * weight
+
+        dropout_mask  = dropout(index_label)
+        reduced_data  = r_data[index_label] * dropout_mask * reciprocal_factor
+        weighted_data = reduced_data * weight
         
         # - Compute sum squared error
         error = np.sum( (weighted_data - goal_pred[enum_i])**2)
-        sse += error
+        sse  += error
 
         # - Update the weight
-        gradient = np.sqrt(error)
-        weight = weight - (lr*gradient)
-        #gradient = np.sum(r_data) * abs_diff
-        #gradient = -2 * abs_diff # chatgpt solution # overshooting
+        #gradient = np.sqrt(error)
+        gradient = np.sqrt( np.sum(weighted_data - goal_pred[enum_i]) )
+        weight   = weight - (lr*gradient)
 
     return weight, sse
 
@@ -522,7 +535,7 @@ def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb):
     return
 
 
-def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , iteration=20,
+def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , iteration=50,
         return_plot_reachability=True, return_boxplot=False, return_xtc_file=False, show_steps=True):
     # I want to optimize the cutoff_min, 
     # In ML, this cutoff_min will correspond to the weight. This weight will be optimize
@@ -534,7 +547,8 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
     # --- Initializing cutoff ---
     # If cutoff_min == None, no value was given, then randomly choose a cutoff_min
     if cutoff_min is None :
-        cutoff_min = random.uniform(np.min(dist_reach), np.max(dist_reach))
+        interval__, _ = define_cutoff(dist_reach, np.max(dist_reach)/2) 
+        cutoff_min = random.uniform(interval__+1, np.max(dist_reach)-(interval__+1))
         print("Initialization of the cutoff at {}".format(cutoff_min))
     
     weight_cutoff = cutoff_min
