@@ -112,7 +112,7 @@ def plot_projection(index_den, dist_reach):
 
 
 
-def transform_reach(data_pca, return_projection=False) :
+def transform_reach(data_pca, method='ward', return_projection=False) :
     """ --- This function perform a hierarchical clustering, transform this latter in reachability distance plot  ---
     For more information about reachability distance plot, read : DOI:10.1007/3-540-36175-8_8
     INPUT : 
@@ -123,7 +123,7 @@ def transform_reach(data_pca, return_projection=False) :
     - dist_reach : list of reachable distances
     - The plot of the dendogram/hierarchical clustering and the plot of the reachability plot are displayed.
     """
-    hclust  = sch.linkage(data_pca, method = 'ward', metric='euclidean' )
+    hclust  = sch.linkage(data_pca, method = method, metric='euclidean' )
     fig, ax = plt.subplots(2,1, figsize=(9,5), gridspec_kw={'hspace': 0.3})
     den_complete = sch.dendrogram(hclust, no_labels = True, color_threshold = 0, ax=ax[0])
     plt.close() 
@@ -511,10 +511,10 @@ def generate_xtc(u, features_xtc, index_den, label_, outcomb) :
     return
 
 # -- Load data and transform it.
-def process_data(pdb, traj, features) :
+def process_data(pdb, traj, features, method='ward') :
     u, features_xtc, features_flat = features_selection(pdb, traj, features)
     data_pca = dim_reduc(features_flat)
-    index_den, dist_reach = transform_reach(data_pca)
+    index_den, dist_reach = transform_reach(data_pca, method=method)
     return u, index_den, data_pca, dist_reach
  
 def perform_rhc(dist_reach, min_number_data, cutoff_min,
@@ -529,27 +529,46 @@ def perform_rhc(dist_reach, min_number_data, cutoff_min,
         boxplot_(label_, dist_reach)
     return label_
 
-def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb):
-    data_pca, dist_reach = process_data(pdb, traj, features)
+def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb, method = 'ward'):
+    data_pca, dist_reach = process_data(pdb, traj, features, method = method)
     perform_rhc(dist_reach, min_number_data, cutoff_min)
     return
 
-
-def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , iteration=50,
+def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , iteration=50, method='ward',
         return_plot_reachability=True, return_boxplot=False, return_xtc_file=False, show_steps=True):
+    """
+    The function deep_rhcc optimize the cutoff_min and computed the clusterization.
+    INPUTS :
+    ------
+    - pdb  : path to pdb 
+    - traj : path to trajectory file
+    - min_number_data : define the minimum number of points to be considered as clusters
+    - outcomb : path to write the trajectory files
+    - cutoff_min (None, default) : By default, a value of cutoff_min is initiated randaomly, 
+        Users can also add a fix value (int or float)
+    - iteration  (50, default) : Optimization of cutoff_min stops when the clusterinzation can not be refine anymore.
+        Users can modify the number of iteration (int)
+    - method ('wald', default) : this is a linkage method to compute distance between clusters
+        Other options : 'single', 'complete'
+    - return_plot_reachability (True, default) : set False, if you do not want to display the reachability and the cutoff_min refinement
+    - return_boxplot  (False, default) : set True, if you would like to display boxplot and analysis of data frequency
+    - return_xtc_file (False, default) : set True, to generate xtc files for each clusters
+    - show_steps (True, default) : Display iteration steps, the sum squared error and the optimized cutoff_min distance
+    """
+
     # I want to optimize the cutoff_min, 
     # In ML, this cutoff_min will correspond to the weight. This weight will be optimize
 
     start_time = time.time()
     # --- Load data and transform data
-    _, _, data_pca, dist_reach = process_data(pdb, traj, features)
+    _, _, data_pca, dist_reach = process_data(pdb, traj, features, method=method)
 
     # --- Initializing cutoff ---
     # If cutoff_min == None, no value was given, then randomly choose a cutoff_min
     if cutoff_min is None :
-        interval__, _ = define_cutoff(dist_reach, np.max(dist_reach)/2) 
-        cutoff_min = random.uniform(interval__+1, np.max(dist_reach)-(interval__+1))
-        print("Initialization of the cutoff at {}".format(cutoff_min))
+        interval__, _ = define_cutoff(dist_reach, np.sort(dist_reach)[::-1][10] )
+        cutoff_min = random.uniform(interval__+1,  np.sort(dist_reach)[::-1][5] ) #  np.max(dist_reach)-(interval__+1))
+        print("Initialization of the cutoff at {} {}".format(cutoff_min, interval__))
     
     weight_cutoff = cutoff_min
     label_ = 0
@@ -571,7 +590,7 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
   
     # --- Generate trajectory files for each cluster ---
     if return_xtc_file==True :
-        u, index_den, _, _ = process_data(pdb, traj, features)
+        u, index_den, _, _ = process_data(pdb, traj, features, method=method)
         features_xtc       = u.select_atoms("protein")
         generate_xtc(u, features_xtc, index_den, label_, outcomb)
 
@@ -586,6 +605,7 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
     print("Time of script execution ", (end_time - start_time)/60) 
 
     return 
+
 
 
 
