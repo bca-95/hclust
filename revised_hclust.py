@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import random
+from multiprocessing import Pool
 
 import MDAnalysis as mda
 
@@ -12,6 +13,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 import scipy.cluster.hierarchy as sch
 from sklearn.cluster import AgglomerativeClustering
 from sklearn import preprocessing
+from scipy.spatial.distance import pdist
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -19,17 +21,43 @@ from matplotlib.patches import Rectangle
 
 import time
 
+def subsample(u, percentage_subsample=False) :
+    """Subsampling data
+    INPUTS : 
+    ------
+    u : mda Universe
+    percentage_subsample (False, default) : percentage of data to keep
+        If False, no subsampling is applied on the data
+        If an integer or float is giving (between 1 and 100), it corresponds to the percentage of data to be keepin
+    """
+    len_data = u.trajectory.n_frames
 
-def features_selection(pdb, traj, features) :
-    """ ---  This function sets the features that will be used for the clusterization  ---
-    The package mdAnalysis is performed in order to select the atoms of interest.
-    The cartesian positions of each atom over the trajectory are extracted, generating
-    a data with dimensions (number of frame, number of selected atoms, xyz positions).
+    if isinstance(percentage_subsample, int) or isinstance(percentage_subsample, float):
+        if not 1 <= percentage_subsample <= 100:
+            raise ValueError("percentage should be between 1 and 100")
+
+       # if len_data >= 100000 :
+       #     raise ValueError("Data too large (> above 300000 data points). Define the input the variable percentage=x to reduce the data size, x is the percentage of data to keep. Or work with smaller samples of data, then afterward you can merge the unseing data sharing similar features with the clustered points.")
+       # size = int((len_data * percentage_subsample)/100)
+       # index_sel = np.random.randint(0, len_data, size)
+
+    if percentage_subsample == False :
+        index_sel = np.arange(len_data)
+    print("The data has {} points".format(len(index_sel)))
+    return index_sel
+
+
+def features_selection(pdb, traj, features, return_features="protein", percentage_subsample=False) :
+    """ ---  This function sets the features used for the clusterization  ---
+    The package mdAnalysis is performed in order to select atoms of interest, used for the clusterisation.
+    The cartesian positions of each atom over the trajectory are extracted; we obtain a data with high dimensions,
+    informing the number of frame, number of selected atoms, xyz positions.
     To efficiently explore the data, its dimension is flatten (number of frame, number of selected atoms * xyz positions).
     INPUTS  :
     - pdb   : absolute path to the pdb file
     - traj  : absolute path to the trajectory file
     - features : atoms selection, use mdAnalysis sytaxes (eg : "protein and name CA")
+    - return_features ("protein", default) : selection of the features for the trajectories of the clustered structures
     OUTPUTS :
     - u : mdAnalysis Universe
     - features_xtc  : atoms selection of the whole protein(s). It will be used later when  creating trajectory files of 
@@ -39,12 +67,16 @@ def features_selection(pdb, traj, features) :
     # --- Selection of the features
     u = mda.Universe(pdb, traj)
     features_to_clust = u.select_atoms(features)
-    features_xtc      = u.select_atoms("protein") # When generating the cluster.xtc
+    features_xtc      = u.select_atoms(return_features) # When generating the cluster.xtc
+    
+    # Subsample data if too large # default is False, no subsampling
+    index_subsample = subsample(u, percentage_subsample)
 
     # Flatten the features
     features_flat = []
-    for i, frame in enumerate(u.trajectory) :
+    for i, frame in enumerate(u.trajectory[index_subsample]) :
         features_flat.append(np.concatenate(features_to_clust.positions))
+
     return(u, features_xtc, features_flat)
 
 def dim_reduc(features_flat) :
@@ -52,7 +84,7 @@ def dim_reduc(features_flat) :
     This function rescale/normalize the data.
     PCA (Principal Component Analysis) is performed to generate a data with lower dimension.
     A number of dimensions (components) that explain above 80% of the data variance is chosen.
-    INPUT :
+    INPUT  :
     - features_flat : Set of features used for the clusterization 
     OUTPUT :
     - data_pca : data with lower dimension
@@ -110,12 +142,33 @@ def plot_projection(index_den, dist_reach):
     ax[0].tick_params (axis = 'both', which = 'major', labelsize = labelsize )
     return
 
+def compute_linkage(piece_data, method='ward') :
+    # I call it piece_data, as I will compute to multi-process that will divise the data in multiple piece
+    distance_matrix = pdist(piece_data, metric='euclidean')
+    hclust_matrix   = sch.linkage(distance_matrix, method = method)
+    return hclust_matrix
+
+def calculate_linkage_multiprocess(data_pca, num_processes=4):
+    piece_data = np.array_split(data_pca, num_processes)
+    pool = Pool(processes=num_processes)
+    linkage_matrices = pool.map(compute_linkage, piece_data)
+    pool.close()
+    pool.join()
+
+    # Renumber clusters of the splitted data and concatenate the results
+    final_linkage_matrix = linkage_matrices[0]
+    for i in range(1, num_processes):
+        num_clusters_previous = final_linkage_matrix.shape[0] 
+        linkage_matrices[i][:, [0, 1,3]] += num_clusters_previous
+        final_linkage_matrix  = np.concatenate((final_linkage_matrix, linkage_matrices[i]), axis=0)
+
+    return final_linkage_matrix
 
 
-def transform_reach(data_pca, method='ward', return_projection=False) :
+def transform_reach(data_pca, method='ward',num_processes=4, return_projection=False) :
     """ --- This function perform a hierarchical clustering, transform this latter in reachability distance plot  ---
     For more information about reachability distance plot, read : DOI:10.1007/3-540-36175-8_8
-    INPUT : 
+    INPUT   : 
     - data_pca   : data with a dimension (m,n)
     OUTPUTS :
     - index_den  : index list of the data points, with an order corresponding from the left to the right of the x-axis 
@@ -123,12 +176,10 @@ def transform_reach(data_pca, method='ward', return_projection=False) :
     - dist_reach : list of reachable distances
     - The plot of the dendogram/hierarchical clustering and the plot of the reachability plot are displayed.
     """
-    hclust  = sch.linkage(data_pca, method = method, metric='euclidean' )
-    fig, ax = plt.subplots(2,1, figsize=(9,5), gridspec_kw={'hspace': 0.3})
-    den_complete = sch.dendrogram(hclust, no_labels = True, color_threshold = 0, ax=ax[0])
-    plt.close() 
-    
-    index_den = np.array(den_complete['leaves'])
+    #linkage_  = calculate_linkage_multiprocess(data_pca, num_processes=num_processes)
+    linkage_   = sch.linkage(data_pca, method=method, metric="euclidean")
+    den_complete = sch.dendrogram(linkage_, no_plot=True) 
+    index_den  = np.array(den_complete['leaves'])
     dist_reach = np.linalg.norm( data_pca[ index_den[:-1] ] - data_pca[ index_den[1:] ] , axis=1 )
     dist_reach = np.insert(dist_reach, 0, 0)
 
@@ -138,11 +189,10 @@ def transform_reach(data_pca, method='ward', return_projection=False) :
     return index_den, dist_reach
 
 
-
 def define_cutoff(dist_reach, cutoff_min) :
     """ --- This function defines a list of discretized cutoff, in descending order. ---
     This list will be used in the function "execute_clustering".
-    INPUTS :
+    INPUTS  :
     - cutoff_min : maximal distance value between two points to be considered as similar.
     - dist_reach : list of reachable distances of the whole data
     OUTPUTS :
@@ -152,10 +202,10 @@ def define_cutoff(dist_reach, cutoff_min) :
     # Sort the cutoff to choose discritized value
     # Select distance values above the cutoff_min
     # Use the std of the whole selected distance values, as interval to set a list of discretized cutoff 
-    sort_cutof = np.sort(dist_reach)[::-1] 
+    sort_cutof  = np.sort(dist_reach)[::-1] 
     
-    sort_cutof = sort_cutof[ sort_cutof >= cutoff_min ]
-    interval_  = np.std( np.abs(np.diff(sort_cutof)) )
+    sort_cutof  = sort_cutof[ sort_cutof >= cutoff_min ]
+    interval_   = np.std( np.abs(np.diff(sort_cutof)) )
     list_cutoff = np.arange(cutoff_min, np.max(sort_cutof), interval_)[::-1]
     return interval_, list_cutoff
 
@@ -217,7 +267,6 @@ def create_delimiter(dist_reach, seek_ID, cuttof_i, used_delimiter, list_cutoff)
         nb_children            = 1
 
     return splitting_delimitation, nb_children
-
 
 
 def execute_clustering(min_number_data, list_cutoff, dist_reach) :
@@ -310,7 +359,6 @@ def execute_clustering(min_number_data, list_cutoff, dist_reach) :
     return visited_parent, used_cutoff, used_delimiter, engender_child, tag_child
 
 
-
 def plot_reachability(dist_reach, interval_,  visited_parent, used_cutoff, used_delimiter, engender_child, tag_child) :
     """ --- Plot the reachability plot and draw the cutoff  --- 
     INPUTS :
@@ -365,6 +413,15 @@ def plot_reachability(dist_reach, interval_,  visited_parent, used_cutoff, used_
     return
 
 
+def sort_clusters(label_) :
+    # Sort labeling according to the number of element within clusters
+    sort_label_ = np.array( [999]*len(label_) )
+    unique_label_, nb_elements = np.unique(label_ , return_counts = True)
+    sort_label_ele = unique_label_[np.argsort(nb_elements)[::-1]]
+    for new_lab, lab in enumerate(sort_label_ele [sort_label_ele != 999]) :
+        sort_label_[np.where(label_ == lab)] = new_lab
+    return sort_label_
+
 
 def label_clustering(dist_reach, visited_parent, used_delimiter, tag_child) :
     """ --- Add label to the data, corresponding to the clusters --- 
@@ -376,19 +433,27 @@ def label_clustering(dist_reach, visited_parent, used_delimiter, tag_child) :
     OUTPUT :
     label_ : list of label, 999 refers to the outliers
     """
+    # -- Find the last generation
+    # Invert the tag_child (invert the list), so we can backpropagate where is located the 
+    # last generation (the last individual with kid) before extinction. It corresponds to 
+    # the first individual in the list 
     last_tag_child        = np.where( np.array(tag_child)[::-1] == 1 )[0][0]
     invert_visited_parent = visited_parent[::-1]
     last_generation       = invert_visited_parent[:last_tag_child]
     last_generation       = last_generation[ last_generation.argsort() ]
 
     label_ = np.array([999]*len(dist_reach ))
-    clust_ID, index_clust = np.unique(visited_parent, return_index =  True)
+    clust_ID, index_clust, nb_elements = np.unique(visited_parent, return_index = True, return_counts=True)
+    
     for clust_i in last_generation :
         find_delimiter = index_clust[np.where(clust_ID == clust_i)]
         begin_clust    = used_delimiter[find_delimiter][0][0]
         end_clust      = used_delimiter[find_delimiter][0][1]
         label_[begin_clust:end_clust] = clust_i
-    return label_
+    # Sort labeling according to the number of element within clusters
+    sort_label_ = sort_clusters(label_)
+    
+    return sort_label_
 
 def boxplot_(label_, dist_reach) :
     """ --- Analyse the homogeneity of the data --- 
@@ -426,6 +491,7 @@ def boxplot_(label_, dist_reach) :
     ax[1].set_xticks(new_id_clust)
     ax[1].set_xticklabels(np.arange(1, len(new_id_clust)+1))
     return
+
 
 def rescale_data(data_pca):
     r_data = preprocessing.MinMaxScaler(feature_range=(0, 1)).fit_transform(data_pca)
@@ -482,7 +548,6 @@ def gradient_sse(data_pca, label_, weight, mask=30) :
         sse  += error
 
         # - Update the weight
-        #gradient = np.sqrt(error)
         gradient = np.sqrt( np.sum(weighted_data - goal_pred[enum_i]) )
         weight   = weight - (lr*gradient)
 
@@ -511,8 +576,8 @@ def generate_xtc(u, features_xtc, index_den, label_, outcomb) :
     return
 
 # -- Load data and transform it.
-def process_data(pdb, traj, features, method='ward') :
-    u, features_xtc, features_flat = features_selection(pdb, traj, features)
+def process_data(pdb, traj, features, method='ward', return_features="protein", percentage_subsample=False ) :
+    u, features_xtc, features_flat = features_selection(pdb, traj, features, return_features=return_features, percentage_subsample=percentage_subsample)
     data_pca = dim_reduc(features_flat)
     index_den, dist_reach = transform_reach(data_pca, method=method)
     return u, index_den, data_pca, dist_reach
@@ -529,13 +594,13 @@ def perform_rhc(dist_reach, min_number_data, cutoff_min,
         boxplot_(label_, dist_reach)
     return label_
 
-def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb, method = 'ward'):
-    data_pca, dist_reach = process_data(pdb, traj, features, method = method)
+def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb, method = 'ward', return_features="protein", percentage_subsample=False):
+    data_pca, dist_reach = process_data(pdb, traj, features, method = method, return_features=return_features, percentage_subsample=percentage_subsample)
     perform_rhc(dist_reach, min_number_data, cutoff_min)
     return
 
 def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , iteration=50, method='ward',
-        return_plot_reachability=True, return_boxplot=False, return_xtc_file=False, show_steps=True):
+        return_features="protein", return_plot_reachability=True, return_boxplot=False, return_xtc_file=False, show_steps=True, percentage_subsample=False ):
     """
     The function deep_rhcc optimize the cutoff_min and computed the clusterization.
     INPUTS :
@@ -548,12 +613,17 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
         Users can also add a fix value (int or float)
     - iteration  (50, default) : Optimization of cutoff_min stops when the clusterinzation can not be refine anymore.
         Users can modify the number of iteration (int)
-    - method ('wald', default) : this is a linkage method to compute distance between clusters
+    - method : {'ward', 'single', 'complete', 'average'}, default='ward' : this is a linkage method to compute distance between clusters
         Other options : 'single', 'complete'
     - return_plot_reachability (True, default) : set False, if you do not want to display the reachability and the cutoff_min refinement
     - return_boxplot  (False, default) : set True, if you would like to display boxplot and analysis of data frequency
     - return_xtc_file (False, default) : set True, to generate xtc files for each clusters
     - show_steps (True, default) : Display iteration steps, the sum squared error and the optimized cutoff_min distance
+
+    OUTPUTS :
+    -------
+    - index_den : real index of the data shuffled after clusterization (generated from the dendogram)
+    - label_    : labelistation of each data points, following the indexation from index_den
     """
 
     # I want to optimize the cutoff_min, 
@@ -561,13 +631,13 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
 
     start_time = time.time()
     # --- Load data and transform data
-    _, _, data_pca, dist_reach = process_data(pdb, traj, features, method=method)
+    _, index_den, data_pca, dist_reach = process_data(pdb, traj, features, method=method, return_features=return_features, percentage_subsample=percentage_subsample)
 
     # --- Initializing cutoff ---
-    # If cutoff_min == None, no value was given, then randomly choose a cutoff_min
+    # If cutoff_min == None (default), no value was given, then randomly choose a cutoff_min
     if cutoff_min is None :
         interval__, _ = define_cutoff(dist_reach, np.sort(dist_reach)[::-1][10] )
-        cutoff_min = random.uniform(interval__+1,  np.sort(dist_reach)[::-1][5] ) #  np.max(dist_reach)-(interval__+1))
+        cutoff_min    = random.uniform(interval__+1,  np.sort(dist_reach)[::-1][5] ) #  np.max(dist_reach)-(interval__+1))
         print("Initialization of the cutoff at {} {}".format(cutoff_min, interval__))
     
     weight_cutoff = cutoff_min
@@ -578,7 +648,7 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
         label_ = perform_rhc( dist_reach, min_number_data, weight_cutoff)
         
         # Continue to iterate if I do not loose X% of my data and I did not create a negative cutoff
-        nb_outliers = np.shape( np.where(label_ == 999))[1]
+        nb_outliers  = np.shape( np.where(label_ == 999))[1]
         max_outliers = (data_pca.shape[0]*36)/100
         if (nb_outliers >= max_outliers) or ( weight_cutoff < 0) :
             break
@@ -589,9 +659,10 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
             print("iter : {} ---- The squared error is {:.2f}:  --- Cutoff {:.2f}".format(it, sse, weight_cutoff))
   
     # --- Generate trajectory files for each cluster ---
+
     if return_xtc_file==True :
-        u, index_den, _, _ = process_data(pdb, traj, features, method=method)
-        features_xtc       = u.select_atoms("protein")
+        u, index_den, _, _ = process_data(pdb, traj, features, method=method, return_features=return_features, percentage_subsample=percentage_subsample )
+        features_xtc       = u.select_atoms(return_features)
         generate_xtc(u, features_xtc, index_den, label_, outcomb)
 
     if return_plot_reachability==True :
@@ -604,7 +675,7 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
     end_time = time.time()
     print("Time of script execution ", (end_time - start_time)/60) 
 
-    return 
+    return index_den, label_ 
 
 
 
