@@ -1,4 +1,3 @@
-* The instruction file needs modification. Will be done soon
 # Revised hierarchical clustering (RHCC)
 ## Objective 
 This tool is an improved version of the hierarchical clustering algorithm, renamed **revised hierarchical clustering** or **RHCC**.<br>
@@ -57,7 +56,7 @@ Additional params (optional): <br>
   The cutoff_min define the maximal distance between two points to be considered similar.
   If cutoff_min is not specified, a random value is picked to initiate the optimization of cutoff_min.
 - iteration : int (50, default)<br>
-  Number of iteration to optimize the cutoff_min. It stops when the min_number_data is reached, or when 36% of the data becomes outliers.
+  Number of iteration to optimize the cutoff_min. It stops when the min_number_data is met, or when 36% of the data becomes outliers.
 - method : {'ward', 'single', 'complete', 'average'} ('ward', default)<br>
   This is a linkage method to compute distance between clusters
 - return_features : MDAnalysis syntaxes ('protein', default) <br>
@@ -85,20 +84,20 @@ features   = "protein and name CA"
 min_number_data = 400 
 outcomb = "/path/to/directory/" 
 r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb)
-
+```
 Command line example with some optional params :
+```
 r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb, method = 'complete', return_features ='protein and segid C', return_xtc_file = True, percentage_subsampling=80)
 ```
 OUTPUTS : <br>
 A figure of the reachability plot will be generated as default.<br>
-If you would like to generate analysis figures of boxplot and number of data within each cluster, set `return_boxplot=True`.<br>
 - index_den : real index of the data shuffled after clusterization (generated from the dendogram)
 - label_    : labelistation of each data points, following the indexation from index_den
   
 Alternatively,  to perform RHCC without optimizing the giving cutoff: <br>
-```r_clust.single_rhc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)<br>
+```r_clust.single_rhc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)
 ```
-To display the description, input(s) and output(s) the function, execute `r_clust.deep_rhcc?`
+To display the description of the module deep_rhcc, execute `r_clust.deep_rhcc?`
 
 
 
