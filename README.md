@@ -95,7 +95,8 @@ A figure of the reachability plot will be generated as default.<br>
 - label_    : labelistation of each data points, following the indexation from index_den
   
 Alternatively,  to perform RHCC without optimizing the giving cutoff: <br>
-```r_clust.single_rhc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)
+```
+r_clust.single_rhc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)
 ```
 To display the description of the module deep_rhcc, execute `r_clust.deep_rhcc?`
 
