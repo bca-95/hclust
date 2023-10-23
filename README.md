@@ -49,7 +49,7 @@ where : <br>
 - traj : absolute path to the trajectory file
 - features : atoms selection using mdAnalysis syntax (e.g. : "protein and name CA")
 - min_number_data : define the minimum number of points to be considered as clusters
-- outcomb : absolute path to write the trajectory files for the clustered points <br>
+- outcomb : absolute path to the directory where to write the trajectory files for the clustered points <br>
 
 Additional params (optional): <br>
 - cutoff_min : int or floate (None, default)<br>
