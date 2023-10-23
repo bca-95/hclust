@@ -43,34 +43,58 @@ This module can be executed in IDEs such as Jupyter Notebook. After installation
 `import revised_hclust as r_clust`
 
 To perform the clustering, execute the command :<br>
-`r_clust.deep_rhcc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)`<br>
-If you would like to generate trajectory files of the clusters, add return_xtc_file=True, as following :<br>
-`r_clust.deep_rhcc(pdb, traj, feat, cutoff_min, min_number_data, outcomb, return_xtc_file=True )`<br>
+`r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb)`<br>
 
 where : <br>
 - pdb : absolute path to the PDB file
 - traj : absolute path to the trajectory file
 - features : atoms selection using mdAnalysis syntax (e.g. : "protein and name CA")
-- cutoff_min (int, float) :  define maximal distance value between two points to be considered similar
 - min_number_data : define the minimum number of points to be considered as clusters
 - outcomb : absolute path to write the trajectory files for the clustered points <br>
+
+Additional params (optional): <br>
+- cutoff_min : int or floate (None, default)<br>
+  The cutoff_min define the maximal distance between two points to be considered similar.
+  If cutoff_min is not specified, a random value is picked to initiate the optimization of cutoff_min.
+- iteration : int (50, default)<br>
+  Number of iteration to optimize the cutoff_min. It stops when the min_number_data is reached, or when 36% of the data becomes outliers.
+- method : {'ward', 'single', 'complete', 'average'} ('ward', default)<br>
+  This is a linkage method to compute distance between clusters
+- return_features : MDAnalysis syntaxes ('protein', default) <br>
+  It selects the coordinates of the protein to be written in output trajectory files [.xtc].
+- return_plot_reachability : bool (True, default) <br>
+  Set False, if you do not want to display the reachability and the cutoff_min refinement
+- return_boxplot : bool (False, default) <br>
+  Set True, if you would like to analyze the quality of the clustering by displaying a boxplot and a histogram of the clusters frequency
+- **return_xtc_file** : bool (False, default) <br>
+  Set True, to generate trajectory files [.xtc] for each clusters
+- show_steps : bool (True, default) <br>
+  Display iteration steps, the sum squared error and the optimized cutoff_min distance
+- percentage_subsample : {False, int ot float} (False, default) <br>
+  As default, no subsampling is executed.
+  If int or float (between 1 and 100), the percentage of data to keep after a random subsampling.
+  For enough large data, it is recommended to subsample data, it will not modify the
+  consistency of the data and it will improve the efficiency of the algorithm.
+
 
 e.g. : <br>
 ```
 pdb  = "/path/to/directory/file.pdb"
 traj = "/path/to/directory/file.xtc"
 features   = "protein and name CA"
-cutoff_min = 5.5
 min_number_data = 400 
 outcomb = "/path/to/directory/" 
-r_clust.deep_rhcc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)
+r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb)
+
+Command line example with some optional params :
+r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb, method = 'complete', return_features ='protein and segid C', return_xtc_file = True, percentage_subsampling=80)
 ```
 OUTPUTS : <br>
-This will display the explored iteration steps (default : iteration=20) and the sum squared error generated at each iteration, with the actual optimized value of the cutoff.
-To disable this, set `show_steps=False`<br>
 A figure of the reachability plot will be generated as default.<br>
 If you would like to generate analysis figures of boxplot and number of data within each cluster, set `return_boxplot=True`.<br>
-
+- index_den : real index of the data shuffled after clusterization (generated from the dendogram)
+- label_    : labelistation of each data points, following the indexation from index_den
+  
 Alternatively,  to perform RHCC without optimizing the giving cutoff: <br>
 ```r_clust.single_rhc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)<br>
 ```
