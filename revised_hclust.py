@@ -28,18 +28,15 @@ def subsample(u, percentage_subsample=False) :
     u : mda Universe
     percentage_subsample (False, default) : percentage of data to keep
         If False, no subsampling is applied on the data
-        If an integer or float is giving (between 1 and 100), it corresponds to the percentage of data to be keepin
+        If a float is giving (between 1 and 100), it corresponds to the percentage of data to be keepin
     """
     len_data = u.trajectory.n_frames
 
-    if isinstance(percentage_subsample, int) or isinstance(percentage_subsample, float):
+    if isinstance(percentage_subsample, float) : 
         if not 1 <= percentage_subsample <= 100:
             raise ValueError("percentage should be between 1 and 100")
-
-       # if len_data >= 100000 :
-       #     raise ValueError("Data too large (> above 300000 data points). Define the input the variable percentage=x to reduce the data size, x is the percentage of data to keep. Or work with smaller samples of data, then afterward you can merge the unseing data sharing similar features with the clustered points.")
-       # size = int((len_data * percentage_subsample)/100)
-       # index_sel = np.random.randint(0, len_data, size)
+        size = int((len_data * percentage_subsample)/100)
+        index_sel = np.random.randint(0, len_data, size)
 
     if percentage_subsample == False :
         index_sel = np.arange(len_data)
@@ -619,6 +616,11 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
     - return_boxplot  (False, default) : set True, if you would like to display boxplot and analysis of data frequency
     - return_xtc_file (False, default) : set True, to generate xtc files for each clusters
     - show_steps (True, default) : Display iteration steps, the sum squared error and the optimized cutoff_min distance
+    - percentage_subsample : {False or float} (False, default) 
+        As default, no subsampling is executed.
+        If a float value (between 1 and 100), the percentage of data to keep after a random subsampling.
+        For enough large data, it is recommended to subsample data, it will not modify the
+        consistency of the data and it will improve the efficiency of the algorithm.
 
     OUTPUTS :
     -------
