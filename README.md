@@ -87,7 +87,7 @@ r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb)
 ```
 Command line example with some optional params :
 ```
-r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb, method = 'complete', return_features ='protein and segid C', return_xtc_file = True, percentage_subsampling=80)
+r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb, method = 'complete', return_features ='protein and segid C', return_xtc_file = True, percentage_subsampling=80.0)
 ```
 OUTPUTS : <br>
 A figure of the reachability plot will be generated as default.<br>
