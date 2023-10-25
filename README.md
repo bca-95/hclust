@@ -69,9 +69,9 @@ Additional params (optional): <br>
   Set True, to generate trajectory files [.xtc] for each clusters
 - show_steps : bool (True, default) <br>
   Display iteration steps, the sum squared error and the optimized cutoff_min distance
-- percentage_subsample : {False, int ot float} (False, default) <br>
+- percentage_subsample : {False or float} (False, default) <br>
   As default, no subsampling is executed.
-  If int or float (between 1 and 100), the percentage of data to keep after a random subsampling.
+  If a float value (between 1 and 100), the percentage of data to keep after a random subsampling.
   For enough large data, it is recommended to subsample data, it will not modify the
   consistency of the data and it will improve the efficiency of the algorithm.
 
