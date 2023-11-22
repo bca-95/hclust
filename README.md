@@ -83,11 +83,11 @@ traj = "/path/to/directory/file.xtc"
 features   = "protein and name CA"
 min_number_data = 400 
 outcomb = "/path/to/directory/" 
-r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb)
+rh.deep_rhcc(pdb, traj, feat, min_number_data, outcomb)
 ```
 Command line example with some optional params :
 ```
-r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb, method = 'complete', return_features ='protein and segid C', return_xtc_file = True, percentage_subsampling=80.0)
+rh.deep_rhcc(pdb, traj, feat, min_number_data, outcomb, method = 'complete', return_features ='protein and segid C', return_xtc_file = True, percentage_subsampling=80.0)
 ```
 OUTPUTS : <br>
 A figure of the reachability plot will be generated as default.<br>
@@ -96,7 +96,7 @@ A figure of the reachability plot will be generated as default.<br>
   
 Alternatively,  to perform RHCC without optimizing the giving cutoff: <br>
 ```
-r_clust.single_rhc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)
+rh.single_rhc(pdb, traj, feat, cutoff_min, min_number_data, outcomb)
 ```
 To display the description of the module deep_rhcc, execute `r_clust.deep_rhcc?`
 
