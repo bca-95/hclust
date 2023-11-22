@@ -39,10 +39,10 @@ Add the following command to your .bashrc : <br>
 
 ## Usage
 This module can be executed in IDEs such as Jupyter Notebook. After installation, import the module into Jupyter Notebook: <br>
-`import revised_hclust as r_clust`
+`import revised_hclust.r_hclust as rh`
 
 To perform the clustering, execute the command :<br>
-`r_clust.deep_rhcc(pdb, traj, feat, min_number_data, outcomb)`<br>
+`rh.deep_rhcc(pdb, traj, feat, min_number_data, outcomb)`<br>
 
 where : <br>
 - pdb : absolute path to the PDB file
