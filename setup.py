@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'numpy',
-        'sklearn',
+        'scikit-learn',
         'scipy',
         'pandas',
         'matplotlib',
