@@ -90,7 +90,6 @@ def define_cutoff(dist_reach, cutoff_min) :
     # Select distance values above the cutoff_min
     # Use the std of the whole selected distance values, as interval to set a list of discretized cutoff 
     sort_cutof  = np.sort(dist_reach)[::-1] 
-    
     sort_cutof  = sort_cutof[ sort_cutof >= cutoff_min ]
     interval_   = np.std( np.abs(np.diff(sort_cutof)) )
     list_cutoff = np.arange(cutoff_min, np.max(sort_cutof), interval_)[::-1]
@@ -183,6 +182,7 @@ def execute_clustering(min_number_data, list_cutoff, dist_reach) :
     used_delimiter  = np.empty((0,2), dtype = int)
     engender_child  = []
     tag_child       = [] # tag 1 if parent have >= 1 child, else tag 0
+    tag_iteration = ""
 
     # For the first generation (raw data), I need to add manually, because of delimiter can not be iterated
     visited_parent = np.append(visited_parent, ID )
@@ -193,7 +193,13 @@ def execute_clustering(min_number_data, list_cutoff, dist_reach) :
     tag_child.append( 0 )
 
     # --- Splitting data successively according to the value list_cutoff ---
-    while cuttof_i < len(list_cutoff)-1 :    
+    while cuttof_i < len(list_cutoff)-1 :   
+        if seek_ID > 0 and (np.shape(used_delimiter)[0] <= seek_ID) :
+            # -- sometimes, unsplitted data (due to their min_number_data) are registered, and it generated error when
+            # min_number_data is reached but the cutoff_ iteration is not yet finish
+            tag_iteration = "stop"
+            return visited_parent, used_cutoff, used_delimiter, engender_child, tag_child, tag_iteration
+
         splitting_delimitation, nb_children = create_delimiter(dist_reach, seek_ID, cuttof_i, used_delimiter, list_cutoff)
 
         # Iterate the cutoff to be used for the following splitting
@@ -202,32 +208,37 @@ def execute_clustering(min_number_data, list_cutoff, dist_reach) :
             cuttof_i = used_cutoff_i[where_i][-1] + 1    
         elif visited_parent[seek_ID] not in visited_parent :
             cuttof_i = cuttof_i +1 
-
         # Parent have more than one child
         if nb_children    > 1 :
             id_child_list = []        
-            for child_i in range(nb_children) :
-                child_data_delimiter = [ splitting_delimitation[child_i], splitting_delimitation[child_i+1] ]
+            # If none of the child has >  min_number_data, this means the data can not be splitted anymore
+            # send an error message
+            children_member_count = any(nb_member > min_number_data for nb_member in np.diff(splitting_delimitation) )
+           
+            if children_member_count == True :            
 
-                # If the size of data are above X, continue the splitting
-                if np.diff(child_data_delimiter) >= min_number_data :
-                    # Create a new ID, as it will become a future parent
-                    ID += 1
-                    id_child_list.append( ID )
+                for child_i in range(nb_children) :
+                    child_data_delimiter = [ splitting_delimitation[child_i], splitting_delimitation[child_i+1] ]
+                    # If the size of data are above X, continue the splitting
+                    if np.diff(child_data_delimiter) >= min_number_data :
+                        # Create a new ID, as it will become a future parent
+                        ID += 1
+                        id_child_list.append( ID )
 
-                    # Relate the children ID to the parent information, after splitting
-                    engender_child[seek_ID] = id_child_list
-                    tag_child[seek_ID]      = 1
+                        # Relate the children ID to the parent information, after splitting
+                        engender_child[seek_ID] = id_child_list
+                        tag_child[seek_ID]      = 1
 
-                    # Preparation of the future parent
-                    visited_parent = np.append(visited_parent, ID )
-                    used_cutoff    = np.append(used_cutoff, list_cutoff[cuttof_i])
-                    used_delimiter = np.append( used_delimiter, np.array(child_data_delimiter).reshape(1,2), axis=0 )
-                    used_cutoff_i  = np.append(used_cutoff_i, cuttof_i)
+                        # Preparation of the future parent
+                        visited_parent = np.append(visited_parent, ID )
+                        used_cutoff    = np.append(used_cutoff, list_cutoff[cuttof_i])
+                        used_delimiter = np.append( used_delimiter, np.array(child_data_delimiter).reshape(1,2), axis=0 )
+                        used_cutoff_i  = np.append(used_cutoff_i, cuttof_i)
 
-                    # Initiate to 0 the engender child of the futur parent, splitting has not yet been performed
-                    engender_child.append( 0) 
-                    tag_child.append( 0)
+                        # Initiate to 0 the engender child of the futur parent, splitting has not yet been performed
+                        engender_child.append( 0) 
+                        tag_child.append( 0)
+                tag_iteration = "continue"
 
         # If the current parent did engender 0 child (here equal to 1 child)
         # Or engendered only 1 child (its optimized version)
@@ -241,9 +252,12 @@ def execute_clustering(min_number_data, list_cutoff, dist_reach) :
             tag_child[seek_ID]      = 0
             # Before splitting, we initiate to 0 the child of the futur parent
             engender_child.append(0) # of the futur parent, no splitting yet
-            tag_child.append(0)        
+            tag_child.append(0)
+
+            tag_iteration = "continue"
+
         seek_ID += 1
-    return visited_parent, used_cutoff, used_delimiter, engender_child, tag_child
+    return visited_parent, used_cutoff, used_delimiter, engender_child, tag_child, tag_iteration
 
 
 def plot_reachability(dist_reach, interval_,  visited_parent, used_cutoff, used_delimiter, engender_child, tag_child) :
@@ -323,8 +337,13 @@ def label_clustering(dist_reach, visited_parent, used_delimiter, tag_child) :
     # -- Find the last generation
     # Invert the tag_child (invert the list), so we can backpropagate where is located the 
     # last generation (the last individual with kid) before extinction. It corresponds to 
-    # the first individual in the list 
-    last_tag_child        = np.where( np.array(tag_child)[::-1] == 1 )[0][0]
+    # the first individual in the list
+    if np.shape(tag_child)[0] ==1 :
+        last_tag_child = 0
+
+    elif  np.shape(tag_child)[0] > 1:
+        last_tag_child        = np.where( np.array(tag_child)[::-1] == 1 )[0][0]
+
     invert_visited_parent = visited_parent[::-1]
     last_generation       = invert_visited_parent[:last_tag_child]
     last_generation       = last_generation[ last_generation.argsort() ]

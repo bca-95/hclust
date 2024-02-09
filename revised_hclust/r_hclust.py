@@ -124,14 +124,14 @@ def process_data(pdb, traj, features, method='ward', return_features="protein", 
 def perform_rhc(dist_reach, min_number_data, cutoff_min,
         return_plot_reachability=False, return_boxplot=False) :
     interval_, list_cutoff = define_cutoff(dist_reach, cutoff_min)
-    visited_parent, used_cutoff,  used_delimiter, engender_child, tag_child = execute_clustering(min_number_data, list_cutoff, dist_reach)
+    visited_parent, used_cutoff,  used_delimiter, engender_child, tag_child, tag_iteration = execute_clustering(min_number_data, list_cutoff, dist_reach)
     label_ = label_clustering(dist_reach, visited_parent, used_delimiter, tag_child)
 
     if return_plot_reachability==True:
         plot_reachability(dist_reach, interval_,  visited_parent, used_cutoff, used_delimiter, engender_child, tag_child)
     if return_boxplot==True:
         boxplot_(label_, dist_reach)
-    return label_
+    return label_, tag_iteration
 
 def single_rhc(pdb, traj, features, cutoff_min, min_number_data, outcomb, method = 'ward', return_features="protein", percentage_subsample=False):
     data_pca, dist_reach = process_data(pdb, traj, features, method = method, return_features=return_features, percentage_subsample=percentage_subsample)
@@ -189,12 +189,16 @@ def deep_rhcc(pdb, traj, features, min_number_data, outcomb, cutoff_min=None , i
 
     # --- Perform clustring and iterate
     for it in range(iteration) :
-        label_ = perform_rhc( dist_reach, min_number_data, weight_cutoff)
-        
+        label_, tag_iteration = perform_rhc( dist_reach, min_number_data, weight_cutoff)
+
         # Continue to iterate if I do not loose X% of my data and I did not create a negative cutoff
         nb_outliers  = np.shape( np.where(label_ == 999))[1]
         max_outliers = (data_pca.shape[0]*36)/100
         if (nb_outliers >= max_outliers) or ( weight_cutoff < 0) :
+            break
+
+        if tag_iteration == "stop" :
+            print("!!!!! Reconsider to reduce the value corresponding to min_number_data !!!!!")
             break
         
         weight, sse = gradient_sse(data_pca, label_, weight_cutoff)
